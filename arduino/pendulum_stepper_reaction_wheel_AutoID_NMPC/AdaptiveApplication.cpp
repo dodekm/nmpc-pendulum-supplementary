@@ -249,7 +249,7 @@ private:
       if (!emergency && !standalone_platform::buttonPressed() && epoch == pressEpoch &&
           PendulumShield.getRuntimeFault() == PendulumClass::RuntimeFault::None &&
           std::isfinite(velocity) && (velocity == T(0) || PendulumShield.getTick() == lastTick_)) {
-        ok = PendulumShield.actuatorWrite(float(velocity), adaptive_hardware::holdAtZero);
+        ok = PendulumShield.actuatorWrite(float(velocity));
         if (ok) {
           acknowledged = T(PendulumShield.getStepperSpeed());
           ok = std::isfinite(acknowledged);

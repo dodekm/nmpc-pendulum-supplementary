@@ -2,8 +2,8 @@
 #define ADAPTIVE_STANDALONEPLATFORM_H
 #pragma once
 #include <Arduino.h>
-#if !defined(ARDUINO_NUCLEO_F446ZE) && !defined(ARDUINO_NUCLEO_F413ZH)
-#error "Select the reviewed NUCLEO-F446ZE or NUCLEO-F413ZH platform."
+#if !defined(ARDUINO_NUCLEO_F446ZE)
+#error "Select the NUCLEO-F446ZE platform used by both demonstrated rigs."
 #endif
 
 #undef B0
@@ -15,7 +15,7 @@
 #include "PendulumShield.h"
 #include "InterruptLock.h"
 
-// NUCLEO-F413ZH PC13 is active HIGH (MB1137). Do not infer boot polarity.
+// The NUCLEO-F446ZE user button is active HIGH. Do not infer boot polarity.
 namespace standalone_platform {
 inline uint32_t coreClockHz() {
   return SystemCoreClock;

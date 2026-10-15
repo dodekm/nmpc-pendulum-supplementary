@@ -7,24 +7,20 @@
 #include <limits>
 #include <type_traits>
 
-// One switch for all application numerical translation units. Arduino's driver
-// and encoder ABIs stay float; those explicit boundaries are not a second core.
+// The embedded application uses the STM32's binary32 FPU throughout. Numerical
+// kernels remain scalar templates for independent binary64 host verification.
 #ifndef NMPC_USE_SINGLE_PRECISION
 #define NMPC_USE_SINGLE_PRECISION 1
 #endif
-#if NMPC_USE_SINGLE_PRECISION != 0 && NMPC_USE_SINGLE_PRECISION != 1
-#error "NMPC_USE_SINGLE_PRECISION must be 0 (binary64) or 1 (binary32)."
+#if NMPC_USE_SINGLE_PRECISION != 1
+#error "The deployed firmware requires NMPC_USE_SINGLE_PRECISION=1 (binary32)."
 #endif
 #if defined(__FAST_MATH__) || (defined(__FINITE_MATH_ONLY__) && __FINITE_MATH_ONLY__ > 0)
 #error "NMPC requires IEEE finite/NaN checks; fast-math and finite-math-only are unsupported."
 #endif
 
 namespace pendulum {
-#if NMPC_USE_SINGLE_PRECISION
 using RuntimeScalar = float;
-#else
-using RuntimeScalar = double;
-#endif
 
 // Precision-specific linkage makes a sketch-local macro disagreement fail at
 // link time instead of silently mixing modes across translation units.

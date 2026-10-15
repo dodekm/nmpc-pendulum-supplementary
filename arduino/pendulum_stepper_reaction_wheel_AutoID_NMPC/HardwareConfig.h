@@ -18,9 +18,11 @@
 #ifndef ADAPTIVE_CONTROL_DIAGNOSTICS
 #define ADAPTIVE_CONTROL_DIAGNOSTICS 1
 #endif
-#if (ADAPTIVE_HOLD_AT_ZERO != 0 && ADAPTIVE_HOLD_AT_ZERO != 1) ||                                  \
-    (ADAPTIVE_CONTROL_DIAGNOSTICS != 0 && ADAPTIVE_CONTROL_DIAGNOSTICS != 1)
-#error "Holding and diagnostics switches must be 0 or 1."
+#if ADAPTIVE_HOLD_AT_ZERO != 0
+#error "The demonstrated firmware releases the motor at zero; ADAPTIVE_HOLD_AT_ZERO must be 0."
+#endif
+#if ADAPTIVE_CONTROL_DIAGNOSTICS != 0 && ADAPTIVE_CONTROL_DIAGNOSTICS != 1
+#error "ADAPTIVE_CONTROL_DIAGNOSTICS must be 0 or 1."
 #endif
 #if ADAPTIVE_DRIVER_PROFILE != 0 && ADAPTIVE_DRIVER_PROFILE != 1
 #error "ADAPTIVE_DRIVER_PROFILE must be 0 (A4988) or 1 (HY-DIV268N)."
@@ -39,7 +41,7 @@ constexpr int wheelSpeedGuard = 40; // rad/s, established A4988 rig policy
 #else
 constexpr int stepPin = 9, directionPin = 10, enablePin = 8, ms1Pin = 7, ms2Pin = 6, ms3Pin = 5;
 constexpr int controlAccelerationScale = 100; // rad/s^2, operator-selected HY-DIV268N rig policy
-constexpr int wheelSpeedGuard = 100; // rad/s, retained after the 200-scale nominal-cycle test
+constexpr int wheelSpeedGuard = 100; // rad/s, current HY-DIV268N deployment policy
 #endif
 // Deployment tuning, not an identified or independently measured actuator capability.
 // Identification excitation/braking and wheel-speed guards remain separate policies.
@@ -47,7 +49,6 @@ static_assert(controlAccelerationScale > 0, "Control acceleration scale must be 
 static_assert(wheelSpeedGuard > 0, "Wheel-speed guard must be positive.");
 constexpr int microsteps = ADAPTIVE_MICROSTEPS;
 constexpr bool commonAnode = ADAPTIVE_COMMON_ANODE != 0;
-constexpr bool holdAtZero = ADAPTIVE_HOLD_AT_ZERO != 0;
 constexpr int disabledLevel = commonAnode ? 0 : 1;
 template <int Profile, int Microsteps, int CommonAnode, int Hold, int Diagnostics>
 struct ConfigurationTag {};

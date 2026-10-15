@@ -105,7 +105,6 @@ public:
   T naturalFrequency() const { return natural_; }
   T currentFrequency() const { return frequency_; }
   T currentAmplitude() const { return amplitude_; }
-  T requestedExcursion() const { return targetExcursion_; }
 
 private:
   T target(bool second) const {

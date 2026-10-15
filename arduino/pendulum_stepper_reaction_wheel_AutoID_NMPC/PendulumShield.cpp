@@ -29,7 +29,6 @@ struct DriverSignalConfiguration {
   uint8_t step_active_us;
   bool step_active_low;
   bool direction_inverted;
-  PendulumClass::ControlInterface resolved_interface;
 };
 
 bool getDriverSignalConfiguration(PendulumClass::DriverType driver_type,
@@ -38,7 +37,7 @@ bool getDriverSignalConfiguration(PendulumClass::DriverType driver_type,
   using ControlInterface = PendulumClass::ControlInterface;
   using DriverType = PendulumClass::DriverType;
 
-  if (driver_type == DriverType::TB6600 || driver_type == DriverType::HY_DIV268N) {
+  if (driver_type == DriverType::HY_DIV268N) {
     ControlInterface resolved = requested_interface;
     if (resolved == ControlInterface::DriverDefault) {
       resolved = ControlInterface::CommonCathode;
@@ -48,13 +47,13 @@ bool getDriverSignalConfiguration(PendulumClass::DriverType driver_type,
       // With the '-' terminals common, the optocouplers are active HIGH.
       // The module manuals do not specify complete input timing limits; 5 us
       // pulse and DIR setup times provide a conservative interface margin.
-      configuration = {LOW, HIGH, 5, 5, 5, false, false, resolved};
+      configuration = {LOW, HIGH, 5, 5, 5, false, false};
       return true;
     }
     if (resolved == ControlInterface::CommonAnode) {
       // With the '+' terminals common, an open-collector LOW asserts an
       // optocoupler input, so all three control signals are inverted.
-      configuration = {HIGH, LOW, 5, 5, 5, true, true, resolved};
+      configuration = {HIGH, LOW, 5, 5, 5, true, true};
       return true;
     }
     return false;
@@ -66,13 +65,9 @@ bool getDriverSignalConfiguration(PendulumClass::DriverType driver_type,
 
   switch (driver_type) {
   case DriverType::A4988:
-  case DriverType::DRV8825:
-  case DriverType::TMC2208:
-  case DriverType::TMC2209:
-    configuration = {LOW, HIGH, 1, 1, 3, false, false, ControlInterface::DriverDefault};
+    configuration = {LOW, HIGH, 1, 1, 3, false, false};
     return true;
 
-  case DriverType::TB6600:
   case DriverType::HY_DIV268N:
     break;
   }
@@ -102,86 +97,6 @@ bool getMicrostepPinConfiguration(PendulumClass::DriverType driver_type, uint16_
       return true;
     case 16:
       configuration = {true, true, true, ALL_MS_OUTPUTS};
-      return true;
-    default:
-      return false;
-    }
-
-  case DriverType::DRV8825:
-    // TI DRV8825: MS1/MS2/MS3 correspond to MODE0/MODE1/MODE2.
-    switch (microsteps) {
-    case 1:
-      configuration = {false, false, false, ALL_MS_OUTPUTS};
-      return true;
-    case 2:
-      configuration = {true, false, false, ALL_MS_OUTPUTS};
-      return true;
-    case 4:
-      configuration = {false, true, false, ALL_MS_OUTPUTS};
-      return true;
-    case 8:
-      configuration = {true, true, false, ALL_MS_OUTPUTS};
-      return true;
-    case 16:
-      configuration = {false, false, true, ALL_MS_OUTPUTS};
-      return true;
-    case 32:
-      configuration = {true, false, true, ALL_MS_OUTPUTS};
-      return true;
-    default:
-      return false;
-    }
-
-  case DriverType::TMC2208:
-    // Standalone mode.  The third legacy configuration pin is DIAG.
-    switch (microsteps) {
-    case 2:
-      configuration = {true, false, false, MS1_OUTPUT | MS2_OUTPUT};
-      return true;
-    case 4:
-      configuration = {false, true, false, MS1_OUTPUT | MS2_OUTPUT};
-      return true;
-    case 8:
-      configuration = {false, false, false, MS1_OUTPUT | MS2_OUTPUT};
-      return true;
-    case 16:
-      configuration = {true, true, false, MS1_OUTPUT | MS2_OUTPUT};
-      return true;
-    default:
-      return false;
-    }
-
-  case DriverType::TMC2209:
-    // Standalone mode.  MS1/MS2 also select the UART address if UART is used.
-    // The third legacy configuration pin is the DIAG output.
-    switch (microsteps) {
-    case 8:
-      configuration = {false, false, false, MS1_OUTPUT | MS2_OUTPUT};
-      return true;
-    case 16:
-      configuration = {true, true, false, MS1_OUTPUT | MS2_OUTPUT};
-      return true;
-    case 32:
-      configuration = {true, false, false, MS1_OUTPUT | MS2_OUTPUT};
-      return true;
-    case 64:
-      configuration = {false, true, false, MS1_OUTPUT | MS2_OUTPUT};
-      return true;
-    default:
-      return false;
-    }
-
-  case DriverType::TB6600:
-    // External TB6600 modules select subdivision with SW1/SW2/SW3.  This
-    // checked value is only used for the software's kinematic scaling.
-    switch (microsteps) {
-    case 1:
-    case 2:
-    case 4:
-    case 8:
-    case 16:
-    case 32:
-      configuration = {false, false, false, 0};
       return true;
     default:
       return false;
@@ -271,7 +186,6 @@ void DatasheetTimedStepper::initializeSignalPins() {
 bool PendulumClass::begin(float sample_period_s, DriverType driver_type, uint16_t microsteps,
                           ControlInterface control_interface) {
   pendulum::verifyBuildPrecision(static_cast<pendulum::RuntimeScalar *>(nullptr));
-  last_begin_error_ = BeginError::None;
   if (initialized_) {
     TimerSample.pause();
     TimerStepper.pause();
@@ -285,7 +199,6 @@ bool PendulumClass::begin(float sample_period_s, DriverType driver_type, uint16_
   // UINT32_MAX itself rounds up to 2^32 in binary32.
   if (!std::isfinite(samplePeriodUs) || samplePeriodUs < Scalar(1) ||
       samplePeriodUs >= Scalar(4294967296ULL)) {
-    last_begin_error_ = BeginError::InvalidSamplingPeriod;
     return false;
   }
 
@@ -298,23 +211,14 @@ bool PendulumClass::begin(float sample_period_s, DriverType driver_type, uint16_
     __NOP();
   }
   if (DWT->CYCCNT == before || !pulseClock.reset(SystemCoreClock, DWT->CYCCNT)) {
-    last_begin_error_ = BeginError::ClockInitializationFailed;
     return false;
   }
 
   DriverSignalConfiguration signal_configuration{};
   if (!getDriverSignalConfiguration(driver_type, control_interface, signal_configuration)) {
-    const uint8_t driver_value = static_cast<uint8_t>(driver_type);
-    if (driver_value > static_cast<uint8_t>(DriverType::HY_DIV268N)) {
-      last_begin_error_ = BeginError::UnsupportedDriverType;
-    } else {
-      last_begin_error_ = BeginError::UnsupportedControlInterface;
-    }
     return false;
   }
 
-  driver_type_ = driver_type;
-  control_interface_ = signal_configuration.resolved_interface;
   driver_enable_level_ = signal_configuration.enable_level;
   driver_disable_level_ = signal_configuration.disable_level;
   enable_to_step_delay_us_ = signal_configuration.enable_to_step_delay_us;
@@ -331,7 +235,6 @@ bool PendulumClass::begin(float sample_period_s, DriverType driver_type, uint16_
   stepper.setConstantSpeed(0.0f);
 
   if (!configureMicrostepping(driver_type, microsteps)) {
-    last_begin_error_ = BeginError::UnsupportedMicrostepMode;
     return false;
   }
 
@@ -340,17 +243,14 @@ bool PendulumClass::begin(float sample_period_s, DriverType driver_type, uint16_
   Wire.begin();
   Wire.setClock(400000);
   if (!as5600.begin()) {
-    last_begin_error_ = BeginError::SensorInitializationFailed;
     return false;
   }
   if (!as5600.detectMagnet()) {
-    last_begin_error_ = BeginError::MagnetNotDetected;
     return false;
   }
   as5600.setOffset(90);
   calibrate();
   if (runtime_fault_ == RuntimeFault::SensorRead) {
-    last_begin_error_ = BeginError::SensorInitializationFailed;
     return false;
   }
   delay(200);
@@ -391,8 +291,7 @@ bool PendulumClass::configureMicrostepping(DriverType driver_type, uint16_t micr
       digitalWrite(pin, level ? HIGH : LOW);
       pinMode(pin, OUTPUT);
     } else {
-      // Release unused pins.  This is mandatory for the DIAG output on TMC
-      // modules and prevents the shield from driving external-module DIP pins.
+      // The external module uses manual DIP switches, not MCU mode outputs.
       pinMode(pin, INPUT);
       digitalWrite(pin, LOW); // Disable the Arduino input pull-up.
     }
@@ -403,9 +302,7 @@ bool PendulumClass::configureMicrostepping(DriverType driver_type, uint16_t micr
   configure_pin(MS3_DIAG_PIN, MS3_OUTPUT, configuration.ms3, configuration.output_mask);
 
   delayMicroseconds(10);
-  driver_type_ = driver_type;
   microsteps_ = microsteps;
-  microstep_mode_software_controlled_ = configuration.output_mask != 0U;
   return true;
 }
 
@@ -421,7 +318,7 @@ void PendulumClass::calibrate(void) {
   }
 }
 
-bool PendulumClass::actuatorWrite(float rad_s, bool holdAtZero) {
+bool PendulumClass::actuatorWrite(float rad_s) {
   if (!isfinite(rad_s)) {
     failStop(RuntimeFault::InvalidCommand);
     return false;
@@ -450,21 +347,12 @@ bool PendulumClass::actuatorWrite(float rad_s, bool holdAtZero) {
     }
   } else {
     stepper.setConstantSpeed(0.0f);
-    const bool holdingAllowed = holdAtZero && initialized_ && runtime_fault_ == RuntimeFault::None;
-    if (holdingAllowed && !driver_enabled_) {
-      setDriverEnabled(true);
-      delayMicroseconds(enable_to_step_delay_us_);
-    } else if (!holdingAllowed) {
-      setDriverEnabled(false);
-    }
+    setDriverEnabled(false);
     // An explicit zero permits recovery from communication/command faults,
     // not a lost encoder origin or a latched sensor/magnet fault.
     if (initialized_ && runtime_fault_ != RuntimeFault::SensorRead &&
         runtime_fault_ != RuntimeFault::Magnet) {
       runtime_fault_ = RuntimeFault::None;
-    }
-    if (holdAtZero && !holdingAllowed) {
-      return false;
     }
   }
   command_watchdog_.update(static_cast<uint32_t>(millis()), should_move);
@@ -504,11 +392,6 @@ float PendulumClass::sensorReadRad() {
   return rad;
 }
 
-float PendulumClass::sensorReadRadSampled() {
-  PendulumSample sample;
-  return readSample(sample) && sample.status == SampleStatus::Valid ? sample.angle : NAN;
-}
-
 void PendulumClass::sampleTick() {
   const float angle = sensorReadRad();
   const uint32_t acquisition_tick = tick + 1U;
@@ -519,9 +402,6 @@ void PendulumClass::sampleTick() {
   }
   y_sampler.publish(angle, acquisition_tick, status, controlTimeUs());
   tick = acquisition_tick;
-  if (sample_callback != NULL) {
-    sample_callback();
-  }
 }
 
 uint32_t PendulumClass::controlTimeUs() const {

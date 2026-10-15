@@ -88,8 +88,11 @@ classdef PendulumExperimentApp < handle
         function accepted=send(self,command)
             accepted=false;
             if isempty(self.Context),self.message('Connect and record first.');return;end
-            try,self.Context.command(command);accepted=true;
-            catch exception,self.message(exception.message);end
+            try
+                self.Context.command(command);accepted=true;
+            catch exception
+                self.message(exception.message);
+            end
         end
         function saveNote(self)
             if isempty(self.Context),self.message('Notes require an active recording session.');return;end
@@ -97,7 +100,9 @@ classdef PendulumExperimentApp < handle
             try
                 self.Context.note(text);self.Model.addEvent("Operator note queued: "+text);
                 self.Widgets.Note.Value={''};self.render(true);
-            catch exception,self.message(exception.message);end
+            catch exception
+                self.message(exception.message);
+            end
         end
         function received(self,bytes,time)
             self.LastPacketAt=toc(self.Clock);
@@ -178,7 +183,9 @@ classdef PendulumExperimentApp < handle
                     if all(control(:,11)==0 & control(:,12)==0)
                         self.update(self.Lines.Solver,NaN,NaN);self.update(self.Lines.Delay,NaN,NaN);
                     end
-                else,title(self.Axes.Timing,'Firmware-reported timing');end
+                else
+                    title(self.Axes.Timing,'Firmware-reported timing');
+                end
                 title(self.Axes.Angle,sprintf('Current cycle %g - raw angle / EKF / reference',control(end,2)));
             else
                 for name={'Raw','Ekf','Reference','Speed','Acceleration','Solver','Delay'}
@@ -201,13 +208,6 @@ classdef PendulumExperimentApp < handle
             if ~isempty(self.Model.Events),self.Widgets.Events.Value=cellstr(self.Model.Events);end
             drawnow limitrate nocallbacks
         end
-        function markSimulationPreview(self)
-            % Offline QA preview only. Cannot open a physical port afterward.
-            self.Options.source_factory=@(~,~)error('adaptive:PreviewOnly','This window is an offline simulation preview.');
-            self.Widgets.Title.Text='SIMULATED GUI PREVIEW - NO HARDWARE CONNECTION';
-            self.Figure.Name='SIMULATED preview - not experimental evidence';
-            self.Model.addEvent('SIMULATED PREVIEW: no serial port or real rig was used.');
-        end
         function path=savePreview(self)
             if isempty(self.SessionDirectory),self.message('Create a recording session first.');path='';return;end
             preview=struct('kind','unverified_bounded_live_preview', ...
@@ -216,7 +216,7 @@ classdef PendulumExperimentApp < handle
                 'control_fields',{self.Model.PlotFields},'current_cycle',self.Model.Control, ...
                 'latest_identification',self.Model.Identification,'latest_record',self.Model.Record, ...
                 'identification_fields',{{'index','read_elapsed_s','angle_rad','held_speed_command_rad_s','ack_elapsed_s'}}, ...
-                'telemetry',self.Model.Telemetry,'build',self.Model.Build,'events',self.Model.Events); %#ok<NASGU>
+                'telemetry',self.Model.Telemetry,'build',self.Model.Build,'events',self.Model.Events);
             uuid=char(java.util.UUID.randomUUID());path=fullfile(self.SessionDirectory,['preview_' uuid '.mat']);
             try
                 nmpc_save_mat_no_replace(path,struct('preview',preview));
@@ -232,11 +232,19 @@ classdef PendulumExperimentApp < handle
                     'Close recording dashboard?','Options',{'Stop logging and close','Cancel'},'DefaultOption',2,'CancelOption',2);
                 if ~strcmp(answer,'Stop logging and close'),return;end
                 self.ClosePending=true;self.stopRecording();
-            elseif isgraphics(self.Figure),delete(self.Figure);end
+            elseif isgraphics(self.Figure)
+                delete(self.Figure);
+            end
         end
         function delete(self)
             % Object deletion never sends a hardware stop/reset command.
-            if ~isempty(self.Context),try,self.Context.stop();catch,end;end
+            if ~isempty(self.Context)
+                try
+                    self.Context.stop();
+                catch
+                    % Destruction must continue after recorder cleanup failure.
+                end
+            end
             if ~isempty(self.Figure) && isgraphics(self.Figure),delete(self.Figure);end
         end
     end

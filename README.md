@@ -23,7 +23,7 @@ arduino/pendulum_stepper_reaction_wheel_AutoID_NMPC/
   Eigen/               Bundled Eigen headers and license texts
   src/                 Bundled AS5600 and AccelStepper libraries
 matlab/
-  scr/                 GUI launcher and alternative recording script
+  scr/                 MATLAB GUI launcher
   gui/                 Experiment application and bounded live-data model
   acquisition/         Native serial acquisition and session handling
   misc/                Hashing and safe record-publication helpers
@@ -73,7 +73,11 @@ appropriately; the firmware does not measure available motor torque.
 For HY-DIV268N, the default is a correctly buffered common-cathode interface.
 `ADAPTIVE_COMMON_ANODE=1` is available only with matching physical wiring.
 `ADAPTIVE_MICROSTEPS` must match the driver's actual switch configuration.
-`ADAPTIVE_HOLD_AT_ZERO=0` releases holding current at zero command.
+`ADAPTIVE_HOLD_AT_ZERO` must remain `0`: the demonstrated application releases
+holding current at zero command. Powered stationary holding is not a retained
+operating mode. The embedded runtime likewise requires
+`NMPC_USE_SINGLE_PRECISION=1`; binary64 calculations are used only by local
+numerical verification, not by an alternative deployed controller.
 
 ## Build the standalone firmware
 
@@ -156,9 +160,8 @@ driver polarity or limits. Native Serial uses **250000 baud, 8N1**. The GUI is
 an optional observer/operator with a bounded live preview, not an independent
 verification of data completeness or shaft motion.
 
-Alternatively, open `matlab/scr/record_adaptive_serial.m`, edit the COM port and
-rig label, and run that script. Both acquisition entrypoints use the same native
-serial recording engine. New sessions are written under
+The GUI is the single maintained user-facing experiment entrypoint and uses
+the native serial acquisition engine. New sessions are written under
 `matlab/scr/results/serial/`, which Git ignores. Keep each generated session's
 `raw.txt`, `receive.jsonl`, `actions.jsonl`, `session.json` and `session.mat`
 together; these are user-generated outputs and are not shipped in this repository.

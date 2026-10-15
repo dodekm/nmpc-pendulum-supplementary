@@ -27,7 +27,6 @@ public:
     acquisition_us_ = acquisitionUs;
     available_ = true;
   }
-  bool available() const { return available_; }
   bool consume(PendulumSample &result) {
     const InterruptLock lock;
     if (!available_) {
