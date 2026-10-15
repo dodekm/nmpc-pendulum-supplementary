@@ -404,7 +404,7 @@ classdef PendulumExperimentApp < handle
             self.Lines.Reference=plot(self.Axes.Angle,NaN,NaN,'--','Color',[.35 .40 .46],'DisplayName','Reference');legend(self.Axes.Angle,'Location','best');
             self.Lines.Speed=plot(self.Axes.Speed,NaN,NaN,'Color',[.02 .36 .60],'LineWidth',1.2);
             self.Lines.Acceleration=plot(self.Axes.Acceleration,NaN,NaN,'Color',[.90 .42 .12],'LineWidth',1.2);
-            self.Lines.Solver=plot(self.Axes.Timing,NaN,NaN,'Color',[.02 .36 .60],'DisplayName','EKF + MPC');hold(self.Axes.Timing,'on');
+            self.Lines.Solver=plot(self.Axes.Timing,NaN,NaN,'Color',[.02 .36 .60],'DisplayName','EKF + preview + NMPC');hold(self.Axes.Timing,'on');
             self.Lines.Delay=plot(self.Axes.Timing,NaN,NaN,'Color',[.90 .42 .12],'DisplayName','Read to command');legend(self.Axes.Timing,'Location','best');
             identification=uitab(tabs,'Title','Identification');id=uigridlayout(identification,[4 1]);id.RowHeight={'1x','1x',145,40};
             self.Axes.IdAngle=self.plotAxes(id,1,1,'Raw encoder angle (deg)','Acquisition time (s)');

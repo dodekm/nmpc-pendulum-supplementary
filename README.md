@@ -160,6 +160,9 @@ driver polarity or limits. Native Serial uses **250000 baud, 8N1**. The GUI is
 an optional observer/operator with a bounded live preview, not an independent
 verification of data completeness or shaft motion.
 
+The GUI's timing trace (`compute_us`) includes EKF prediction/correction,
+command-age preview and NMPC together; it is not a solver-only measurement.
+
 The GUI is the single maintained user-facing experiment entrypoint and uses
 the native serial acquisition engine. New sessions are written under
 `matlab/scr/results/serial/`, which Git ignores. Keep each generated session's
@@ -190,6 +193,12 @@ to historical recordings. The deployment-policy table is configuration guidance,
 not an assertion that this snapshot is byte-identical to every historical manual
 build. Identification and physical trajectories depend on the apparatus and the
 new observations; identical numerical estimates or motion are not guaranteed.
+
+Keep the Git commit used to build an experiment with its recording. By default,
+Serial metadata reports `source_fingerprint=unfingerprinted`; an optional
+`ADAPTIVE_BUILD_FINGERPRINT` build definition can identify the supplied source
+when applied consistently to all translation units. The manuscript recordings
+do not establish a source-to-binary identity with this maintained repository.
 
 ## License
 

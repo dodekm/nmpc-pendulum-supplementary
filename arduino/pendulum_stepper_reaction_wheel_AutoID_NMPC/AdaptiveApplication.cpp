@@ -740,8 +740,8 @@ private:
       stop("restart_zero_failed", Phase::HardwareFault);
       return;
     }
-    // Clear recoverable driver faults without enabling, then restore holding
-    // through the atomic emergency-checked publication path.
+    // Clear recoverable driver faults without enabling, then confirm the released
+    // zero command through the atomic emergency-checked publication path.
     if (!write(T(0))) {
       return;
     }
