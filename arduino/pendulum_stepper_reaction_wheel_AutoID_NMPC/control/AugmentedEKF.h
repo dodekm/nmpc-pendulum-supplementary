@@ -15,6 +15,10 @@ template <class Scalar> struct InnovationDiagnostics {
   Matrix<Scalar, 4> prior = Matrix<Scalar, 4>::Zero(), gain = Matrix<Scalar, 4>::Zero();
   Scalar innovation = Scalar(0), variance = Scalar(0), nis = Scalar(0);
 };
+// State order: [pendulum angular velocity, downward-referenced angle,
+// prescribed wheel angular velocity, disturbance angular acceleration].
+// The owner establishes initial state/covariance; step() commits both, and
+// its diagnostics, only after the complete chronological update succeeds.
 template <class Scalar> class AugmentedEKF {
 public:
   Matrix<Scalar, 4> state = Matrix<Scalar, 4>::Zero();
@@ -34,17 +38,18 @@ public:
     Matrix<Scalar, 4, 4> predictedCovariance = covariance,
                          processCovariance = Matrix<Scalar, 4, 4>::Zero();
     processCovariance.diagonal() << ControlTuning<Scalar>::velocityProcessVariance,
-                                   ControlTuning<Scalar>::angleProcessVariance, Scalar(0),
-                                   ControlTuning<Scalar>::disturbanceProcessVariance;
+        ControlTuning<Scalar>::angleProcessVariance, Scalar(0),
+        ControlTuning<Scalar>::disturbanceProcessVariance;
     for (int intervalIndex = 0; intervalIndex < elapsedIntervals; ++intervalIndex) {
       const Scalar interval = timing ? timing->interval : model.samplePeriod;
       const bool commandOccurred = timing ? timing->commandOccurred : intervalIndex == 0;
-      const Scalar delay = timing && commandOccurred && acceleration != Scalar(0)
-                               ? timing->commandDelay : Scalar(0);
+      const Scalar delay =
+          timing && commandOccurred && acceleration != Scalar(0) ? timing->commandDelay : Scalar(0);
       // Known-input jump has identity state Jacobian. Its magnitude is the
       // acknowledged speed increment (acceleration * NOMINAL samplePeriod).
       // Free flow first accounts for the previous command's publication delay.
-      if (!propagateFreeFlow(predictedState, predictedCovariance, model, delay)) return false;
+      if (!propagateFreeFlow(predictedState, predictedCovariance, model, delay))
+        return false;
       if (commandOccurred) {
         predictedState(0) -= model.gamma * acceleration * model.samplePeriod;
         predictedState(2) += acceleration * model.samplePeriod;
@@ -89,7 +94,8 @@ private:
   static bool propagateFreeFlow(Matrix<Scalar, 4> &predictedState,
                                 Matrix<Scalar, 4, 4> &predictedCovariance,
                                 const ModelParameters<Scalar> &model, Scalar duration) {
-    if (duration == Scalar(0)) return predictedState.allFinite() && predictedCovariance.allFinite();
+    if (duration == Scalar(0))
+      return predictedState.allFinite() && predictedCovariance.allFinite();
     Matrix<Scalar, 4, 4> continuousJacobian = Matrix<Scalar, 4, 4>::Zero(), transition;
     continuousJacobian(0, 0) = -model.dampingSlope(predictedState(0));
     continuousJacobian(0, 1) = -model.alpha * std::cos(predictedState(1));
@@ -97,7 +103,8 @@ private:
     if (!matrixExponential(Matrix<Scalar, 4, 4>(continuousJacobian * duration), transition))
       return false;
     Matrix<Scalar, 3> next, physical = predictedState.template head<3>();
-    if (!integrateFreeFlowRK4(physical, model, predictedState(3), duration, next)) return false;
+    if (!integrateFreeFlowRK4(physical, model, predictedState(3), duration, next))
+      return false;
     predictedState.template head<3>() = next;
     predictedCovariance = (transition * predictedCovariance * transition.transpose()).eval();
     return predictedState.allFinite() && predictedCovariance.allFinite();

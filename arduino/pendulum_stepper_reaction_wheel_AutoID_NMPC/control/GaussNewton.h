@@ -18,6 +18,8 @@ enum class SolverExit : uint8_t {
   InvalidProblem,
   WorkBudgetExceeded // appended wire value 8; existing exit codes stay unchanged
 };
+// A usable plan has been numerically verified in the current problem. This is
+// distinct from convergence and from successful physical capture of the rig.
 template <class Scalar> struct SolverResult {
   bool usable = false, converged = false, directionFallback = false, warmReset = false,
        verifiedFallback = false;
@@ -49,6 +51,8 @@ template <class Scalar> struct SolverSettings {
   }
 };
 
+// Mutates inputPlan to an accepted plan or a verified fallback. All residuals,
+// derivatives and line-search trials share the same immutable MPCProblem.
 template <class Scalar>
 SolverResult<Scalar>
 solveGaussNewton(const MPCProblem<Scalar> &problem, InputPlan<Scalar> &inputPlan,

@@ -4,6 +4,9 @@
 #include "NumericTypes.h"
 
 namespace pendulum {
+// Identified physical coefficients; no nominal plant is assumed. With angles
+// in radians and time in seconds, alpha has units s^-2, beta has units s^-1,
+// and coulomb is an angular acceleration. gamma is the signed wheel coupling.
 template <class Scalar> struct ModelParameters {
   // x=[pendulum angular velocity, angle from downward, prescribed wheel speed].
   // xdot=[-alpha*sin(angle)-beta*omega-c*tanh(omega/ws)-gamma*u+d, omega, u].

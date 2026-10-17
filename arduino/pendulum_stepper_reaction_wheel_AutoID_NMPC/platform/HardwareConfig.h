@@ -37,11 +37,11 @@ namespace adaptive_hardware {
 #if ADAPTIVE_DRIVER_PROFILE == 0
 constexpr int stepPin = 11, directionPin = 12, enablePin = 7, ms1Pin = 8, ms2Pin = 9, ms3Pin = 10;
 constexpr int controlAccelerationScale = 40; // rad/s^2, established A4988 rig policy
-constexpr int wheelSpeedGuard = 40; // rad/s, established A4988 rig policy
+constexpr int wheelSpeedGuard = 40;          // rad/s, established A4988 rig policy
 #else
 constexpr int stepPin = 9, directionPin = 10, enablePin = 8, ms1Pin = 7, ms2Pin = 6, ms3Pin = 5;
 constexpr int controlAccelerationScale = 100; // rad/s^2, operator-selected HY-DIV268N rig policy
-constexpr int wheelSpeedGuard = 100; // rad/s, current HY-DIV268N deployment policy
+constexpr int wheelSpeedGuard = 100;          // rad/s, current HY-DIV268N deployment policy
 #endif
 // Deployment tuning, not an identified or independently measured actuator capability.
 // Identification excitation/braking and wheel-speed guards remain separate policies.

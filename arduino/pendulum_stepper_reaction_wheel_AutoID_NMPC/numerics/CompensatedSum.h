@@ -8,6 +8,7 @@ namespace pendulum::numerics {
 // inputs/overflow propagate as nonfinite; callers must reject invalid costs.
 template <class T> class CompensatedSum {
   static_assert(std::is_floating_point<T>::value, "Floating-point scalar required");
+
 public:
   void clear() { sum_ = correction_ = T(0); }
   void add(T value) {

@@ -6,6 +6,8 @@
 #include "numerics/CompensatedSum.h"
 
 namespace pendulum {
+// Derivatives are with respect to the decision-input plan. hessian is the
+// Gauss-Newton approximation, not the residual-weighted exact Hessian.
 template <class Scalar> struct ObjectiveDerivatives {
   Scalar cost = std::numeric_limits<Scalar>::infinity();
   InputPlan<Scalar> gradient = InputPlan<Scalar>::Zero();
@@ -13,6 +15,8 @@ template <class Scalar> struct ObjectiveDerivatives {
   Matrix<Scalar, 3> firstPrediction = Matrix<Scalar, 3>::Zero(),
                     lastPrediction = Matrix<Scalar, 3>::Zero();
 };
+// Optional full-horizon diagnostics; the solver's cost-only entry point does
+// not allocate this trace. State blocks use the ModelParameters state order.
 template <class Scalar> struct PredictionTrace {
   Matrix<Scalar, 3 * kHorizon> states = Matrix<Scalar, 3 * kHorizon>::Zero();
   Matrix<Scalar, 3 * kHorizon, kHorizon> jacobian = Matrix<Scalar, 3 * kHorizon, kHorizon>::Zero();
@@ -131,8 +135,9 @@ bool evaluateTrajectory(const MPCProblem<Scalar> &problem, const InputPlan<Scala
       if (!std::isfinite(energyResidual) || !std::isfinite(wheelResidual)) {
         return false;
       }
-      costSum.add(Scalar(.5) * (problem.energyWeight(stageIndex) * energyResidual * energyResidual +
-                               problem.wheelSpeedWeight(stageIndex) * wheelResidual * wheelResidual));
+      costSum.add(Scalar(.5) *
+                  (problem.energyWeight(stageIndex) * energyResidual * energyResidual +
+                   problem.wheelSpeedWeight(stageIndex) * wheelResidual * wheelResidual));
       if constexpr (Derivatives) {
         const Scalar angleGradient = problem.energyWeight(stageIndex) > Scalar(0)
                                          ? problem.model.alpha * std::sin(state(1))

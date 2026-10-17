@@ -8,14 +8,16 @@ namespace pendulum {
 namespace detail {
 template <class Scalar>
 bool activeCholeskyDirection(const Matrix<Scalar, kHorizon, kHorizon> &matrix,
-                             const InputPlan<Scalar> &gradient,
-                             InputPlan<Scalar> &direction, int active) {
+                             const InputPlan<Scalar> &gradient, InputPlan<Scalar> &direction,
+                             int active) {
   // Inactive decisions have independent positive input penalties. Never
   // silently discard couplings when this public kernel is used independently.
   for (int row = active; row < kHorizon; ++row) {
-    if (!(matrix(row, row) > Scalar(0))) return false;
+    if (!(matrix(row, row) > Scalar(0)))
+      return false;
     for (int column = 0; column < kHorizon; ++column)
-      if (column != row && matrix(row, column) != Scalar(0)) return false;
+      if (column != row && matrix(row, column) != Scalar(0))
+        return false;
     direction(row) = -gradient(row) / matrix(row, row);
   }
   // Runtime extent, compile-time bounded storage: no dynamic Eigen allocation.
@@ -23,15 +25,18 @@ bool activeCholeskyDirection(const Matrix<Scalar, kHorizon, kHorizon> &matrix,
   using ActiveVector = Eigen::Matrix<Scalar, Eigen::Dynamic, 1, 0, kHorizon, 1>;
   ActiveSquare block = matrix.topLeftCorner(active, active);
   Eigen::LLT<ActiveSquare, Eigen::Lower> factorization(block);
-  if (factorization.info() != Eigen::Success) return false;
+  if (factorization.info() != Eigen::Success)
+    return false;
   const Scalar epsilon = std::numeric_limits<Scalar>::epsilon();
   const Scalar reciprocalCondition = factorization.rcond();
-  if (!std::isfinite(reciprocalCondition) || reciprocalCondition <= epsilon) return false;
+  if (!std::isfinite(reciprocalCondition) || reciprocalCondition <= epsilon)
+    return false;
   const ActiveVector rhs = -gradient.head(active);
   const ActiveVector solution = factorization.solve(rhs);
   direction.head(active) = solution;
   const Scalar slope = gradient.dot(direction);
-  if (!direction.allFinite() || !std::isfinite(slope) || !(slope < Scalar(0))) return false;
+  if (!direction.allFinite() || !std::isfinite(slope) || !(slope < Scalar(0)))
+    return false;
   // Backward-error check is independent of the estimated condition number.
   const ActiveVector residual = block * solution - rhs;
   const ActiveVector magnitude = block.cwiseAbs() * solution.cwiseAbs() + rhs.cwiseAbs();
@@ -65,7 +70,8 @@ bool computeDescentDirection(const Matrix<Scalar, kHorizon, kHorizon> &hessian,
     if (std::isfinite(reciprocalCondition) && reciprocalCondition > machineEpsilon) {
       direction = factorization.solve(-gradient);
       const Scalar slope = gradient.dot(direction);
-      if (direction.allFinite() && std::isfinite(slope) && slope < Scalar(0)) return true;
+      if (direction.allFinite() && std::isfinite(slope) && slope < Scalar(0))
+        return true;
     }
   }
   usedFallback = true;
@@ -94,7 +100,8 @@ bool computeDescentDirection(const Matrix<Scalar, kHorizon, kHorizon> &hessian,
         direction =
             diagonalScaling.cwiseProduct(equilibratedDirection) * (gradientScale / matrixScale);
         const Scalar slope = gradient.dot(direction);
-        if (direction.allFinite() && std::isfinite(slope) && slope < Scalar(0)) return true;
+        if (direction.allFinite() && std::isfinite(slope) && slope < Scalar(0))
+          return true;
       }
     }
   }

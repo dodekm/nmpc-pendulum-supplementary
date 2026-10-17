@@ -12,8 +12,8 @@
 #undef NP
 #undef min
 #undef max
-#include "PendulumShield.h"
-#include "InterruptLock.h"
+#include "platform/PendulumShield.h"
+#include "platform/InterruptLock.h"
 
 // The NUCLEO-F446ZE user button is active HIGH. Do not infer boot polarity.
 namespace standalone_platform {

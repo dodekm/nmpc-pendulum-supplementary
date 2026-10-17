@@ -112,16 +112,18 @@ bool integrateContinuousRK4(const Matrix<Scalar, 3> &state, Scalar decisionInput
 // nominal controller sampling period. Used on both sides of an acknowledged
 // wheel-speed jump by the chronological EKF.
 template <class Scalar>
-bool integrateFreeFlowRK4(const Matrix<Scalar, 3> &state,
-                          const ModelParameters<Scalar> &model, Scalar disturbanceAcceleration,
-                          Scalar duration, Matrix<Scalar, 3> &nextState,
+bool integrateFreeFlowRK4(const Matrix<Scalar, 3> &state, const ModelParameters<Scalar> &model,
+                          Scalar disturbanceAcceleration, Scalar duration,
+                          Matrix<Scalar, 3> &nextState,
                           Matrix<Scalar, 3, 3> *stateJacobian = nullptr,
                           const InitialStageTrigonometry<Scalar> *trigonometry = nullptr) {
   if (!state.allFinite() || !model.isValid() || !std::isfinite(disturbanceAcceleration) ||
-      !std::isfinite(duration) || duration < Scalar(0)) return false;
+      !std::isfinite(duration) || duration < Scalar(0))
+    return false;
   if (duration == Scalar(0)) {
     nextState = state;
-    if (stateJacobian) stateJacobian->setIdentity();
+    if (stateJacobian)
+      stateJacobian->setIdentity();
     return true;
   }
   const Scalar frequency = std::max(std::sqrt(model.alpha), model.dampingSlope(Scalar(0)));
@@ -129,9 +131,11 @@ bool integrateFreeFlowRK4(const Matrix<Scalar, 3> &state,
       std::max(frequency * duration / Scalar(.2),
                model.coulomb > Scalar(0) ? duration / Scalar(.02) : Scalar(1));
   if (!std::isfinite(requestedPieces) || !(requestedPieces > Scalar(0)) ||
-      requestedPieces > Scalar(64)) return false;
+      requestedPieces > Scalar(64))
+    return false;
   const int pieces = int(std::ceil(requestedPieces));
-  if (pieces < 1 || pieces > 64) return false;
+  if (pieces < 1 || pieces > 64)
+    return false;
   ModelParameters<Scalar> submodel = model;
   submodel.samplePeriod = duration / Scalar(pieces);
   Matrix<Scalar, 3, 3> f = Matrix<Scalar, 3, 3>::Identity(), stepF;
@@ -139,11 +143,14 @@ bool integrateFreeFlowRK4(const Matrix<Scalar, 3> &state,
   for (int piece = 0; piece < pieces; ++piece) {
     if (!integrateContinuousRK4<Scalar>(current, Scalar(0), submodel, disturbanceAcceleration,
                                         Scalar(0), nextState, stateJacobian ? &stepF : nullptr,
-                                        nullptr, piece == 0 ? trigonometry : nullptr)) return false;
-    if (stateJacobian) f = (stepF * f).eval();
+                                        nullptr, piece == 0 ? trigonometry : nullptr))
+      return false;
+    if (stateJacobian)
+      f = (stepF * f).eval();
     current = nextState;
   }
-  if (stateJacobian) *stateJacobian = f;
+  if (stateJacobian)
+    *stateJacobian = f;
   return true;
 }
 // Exact prescribed held-speed realization: the command changes wheel speed
@@ -171,9 +178,9 @@ bool integrateRK4(const Matrix<Scalar, 3> &state, Scalar decisionInput,
   jumped(0) -= model.gamma * u * model.samplePeriod;
   jumped(2) += u * model.samplePeriod;
   Matrix<Scalar, 3, 3> f;
-  if (!integrateFreeFlowRK4(jumped, model, disturbanceAcceleration, model.samplePeriod,
-                            nextState, (stateJacobian || inputJacobian) ? &f : nullptr,
-                            trigonometry)) return false;
+  if (!integrateFreeFlowRK4(jumped, model, disturbanceAcceleration, model.samplePeriod, nextState,
+                            (stateJacobian || inputJacobian) ? &f : nullptr, trigonometry))
+    return false;
   if (stateJacobian) {
     *stateJacobian = f;
   }

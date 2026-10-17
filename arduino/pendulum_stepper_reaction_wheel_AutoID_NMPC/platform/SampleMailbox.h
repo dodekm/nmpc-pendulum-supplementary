@@ -1,7 +1,7 @@
 #ifndef ADAPTIVE_SAMPLEMAILBOX_H
 #define ADAPTIVE_SAMPLEMAILBOX_H
 #pragma once
-#include "InterruptLock.h"
+#include "platform/InterruptLock.h"
 #include <stdint.h>
 
 enum class SampleStatus : uint8_t { Valid, SensorReadError, MagnetError };

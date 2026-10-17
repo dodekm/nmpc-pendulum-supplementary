@@ -3,6 +3,10 @@
 #pragma once
 #include "Config.h"
 namespace identification {
+// Local integration state, independent of the controller/EKF storage. sw[j]
+// and sq[j] are derivatives of angular velocity and angle with respect to
+// parameter j. Slots [0,kShared) follow Config.h; slot kShared is this window's
+// initial angular velocity, not another physical coefficient.
 template <class T> struct State {
   T omega = T(0), angle = T(0);
   T sw[kSensitivity]{}, sq[kSensitivity]{}; // alpha,beta,gamma,bias,Coulomb,window initial omega
@@ -34,6 +38,9 @@ template <class T> State<T> shifted(const State<T> &x, const State<T> &d, T h) {
   }
   return y;
 }
+// Apply the acknowledged held-speed increment, then differentiate the same
+// RK4 free-flow stages as the predicted trajectory. p is read-only and has
+// kShared physical entries; h is in seconds and speedIncrement is in rad/s.
 template <class T>
 bool interval(State<T> &state, const T *p, T speedIncrement, T h = Policy<T>::period) {
   if (!p || !std::isfinite(speedIncrement) || !std::isfinite(h) || !(h > T(0)) ||

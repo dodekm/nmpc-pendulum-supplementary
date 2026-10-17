@@ -5,4 +5,5 @@ SortIncludes: Never
 AllowShortFunctionsOnASingleLine: Inline
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
-InsertBraces: true
+# Formatting must not rewrite executable tokens in the numerical kernels.
+InsertBraces: false

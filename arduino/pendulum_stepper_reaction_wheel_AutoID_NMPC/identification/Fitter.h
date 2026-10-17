@@ -15,6 +15,9 @@ enum class FitExit : uint8_t {
   PoorInformation,
   PrecisionLimited
 };
+// parameters contains kShared physical coefficients followed by kWindows
+// nuisance initial velocities. usable covers training/information admission;
+// a separate frozen-coefficient validation is required before control begins.
 template <class T> struct FitResult {
   T parameters[kVariables]{}, rms = T(0), gradient = T(0),
                               cost = std::numeric_limits<T>::infinity();
@@ -24,6 +27,9 @@ template <class T> struct FitResult {
   FitExit exit = FitExit::InsufficientData;
   bool usable = false;
 };
+// Cooperative, fixed-storage robust nonlinear least squares. begin() borrows
+// data until running() becomes false: its owner must keep the buffer alive and
+// unchanged. poll() advances the fit without blocking acquisition servicing.
 template <class T> class Fitter {
 public:
   Fitter() = default;

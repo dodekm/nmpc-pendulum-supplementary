@@ -29,6 +29,8 @@ template <class T> bool isSchurStable(const Matrix<T, 3, 3> &a) {
   return true;
 }
 // Cooperative DARE iteration using the SAME one-step RK4 linearization as MPC.
+// begin() copies its inputs; poll() performs bounded work. complete reports
+// termination, while valid separately reports an admissible terminal design.
 template <class T> class TerminalDesign {
 public:
   Matrix<T, 3, 3> tail = Matrix<T, 3, 3>::Zero(), Ad = Matrix<T, 3, 3>::Zero();

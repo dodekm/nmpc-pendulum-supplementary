@@ -1,10 +1,10 @@
 #ifndef ADAPTIVE_APPLICATIONDIAGNOSTICS_H
 #define ADAPTIVE_APPLICATIONDIAGNOSTICS_H
-#include "AdaptiveApplication.h"
-#include "BuildInfo.h"
-#include "HardwareConfig.h"
-#include "ControlDiagnostics.h"
-#include "IdentificationStream.h"
+#include "application/Lifecycle.h"
+#include "application/BuildInfo.h"
+#include "platform/HardwareConfig.h"
+#include "telemetry/ControlDiagnostics.h"
+#include "telemetry/IdentificationStream.h"
 #include "control/CycleController.h"
 #include "identification/GuidedExcitation.h"
 #include "identification/Validation.h"
@@ -451,7 +451,8 @@ private:
           .number(c.solverSettings.gradientTolerance)
           .text(",control_work_budget_us=")
           .integer(pendulum::ControlTuning<T>::controlWorkBudgetUs)
-          .text(",timing_model=acknowledged_jump,speed_cost_latch_protected=1,holding_cost_latched=1")
+          .text(
+              ",timing_model=acknowledged_jump,speed_cost_latch_protected=1,holding_cost_latched=1")
           .text(",candidate=")
           .text(adaptive_build::candidate)
           .text(",planning_model=previous_ack_delay")

@@ -6,11 +6,11 @@
 #include <Arduino.h>
 #include "src/AS5600/AS5600.h"
 #include "src/AccelStepper/AccelStepper.h"
-#include "ConstantSpeedPulseScheduler.h"
-#include "SampleMailbox.h"
-#include "CommandWatchdog.h"
+#include "platform/ConstantSpeedPulseScheduler.h"
+#include "platform/SampleMailbox.h"
+#include "platform/CommandWatchdog.h"
 #include "control/Precision.h"
-#include "HardwareConfig.h"
+#include "platform/HardwareConfig.h"
 
 // AccelStepper changes DIR immediately before raising STEP.  This wrapper
 // provides driver-specific DIR setup time, pulse width, and pulse polarity.
@@ -45,7 +45,9 @@ private:
   ConstantSpeedPulseScheduler pulse_scheduler_;
 };
 
-class PendulumClass {
+// Owns the sensor, timer callbacks and actuator state. The single instance is
+// exposed through PendulumShield; timer dispatch does not require inheritance.
+class PendulumClass final {
 
 public:
   enum class RuntimeFault : uint8_t {
@@ -96,7 +98,9 @@ public:
 
   unsigned long getTick() { return tick; }
 
-protected:
+private:
+  static void samplerCallback();
+  static void stepperCallback();
   void sampleTick();
   SampleMailbox y_sampler;
   volatile uint32_t tick = 0;

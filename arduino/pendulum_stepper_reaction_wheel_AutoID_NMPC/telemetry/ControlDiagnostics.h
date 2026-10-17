@@ -1,6 +1,6 @@
 #ifndef ADAPTIVE_CONTROLDIAGNOSTICS_H
 #define ADAPTIVE_CONTROLDIAGNOSTICS_H
-#include "StandaloneTelemetry.h"
+#include "telemetry/StandaloneTelemetry.h"
 namespace control_diagnostics {
 inline constexpr char schema[] =
     "control_diag_header,seq,cycle,tick,t_s,phase,phi_raw,phi_est,omega_est,disturbance,ref_phi,"

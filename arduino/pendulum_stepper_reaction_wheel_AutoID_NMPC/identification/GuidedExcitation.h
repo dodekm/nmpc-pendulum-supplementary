@@ -5,6 +5,8 @@ namespace identification {
 // Held-speed excitation: phi/v=-gamma*s/(s^2+beta*s+alpha) for the
 // viscous linear model. sqrt(alpha) locates its resonance. Amplitude and
 // frequency bands account for nonlinear softening and estimated dry losses.
+// command() consumes each sample index exactly once and returns rad/s. The
+// owner applies the shared speed/slew policy before acknowledging a command.
 template <class T> class GuidedExcitation {
 public:
   bool begin(T alpha, T beta, T gamma, T attemptScale = T(1), bool validation = false,

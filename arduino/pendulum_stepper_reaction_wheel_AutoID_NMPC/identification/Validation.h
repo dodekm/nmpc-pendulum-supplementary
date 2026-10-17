@@ -11,6 +11,8 @@ template <class T> struct Validation {
 };
 // Cooperative fixed-storage prediction assessment. The caller must retain the
 // immutable acquisition buffer until completion. Coefficients are copied/frozen.
+// Only initial velocity is fitted to the reserved prefix; that prefix is then
+// excluded from all scored errors. rms/peak are angular errors in radians.
 template <class T> class Validator {
 public:
   Validator() = default;

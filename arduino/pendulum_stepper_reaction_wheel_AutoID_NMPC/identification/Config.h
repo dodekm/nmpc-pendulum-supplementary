@@ -5,6 +5,8 @@
 namespace identification {
 constexpr int kTrainIntervals = 600, kValidationIntervals = 600;
 constexpr int kWindows = 6, kWindowIntervals = kTrainIntervals / kWindows;
+// Shared parameter order: alpha, beta, signed gamma, constant bias, Coulomb
+// acceleration. Each training window adds one independent initial velocity.
 constexpr int kShared = 5, kVariables = kShared + kWindows, kSensitivity = kShared + 1;
 constexpr int kValidationBands = 4;
 inline int validationBand(int interval) {
@@ -22,6 +24,9 @@ template <class T> struct Policy {
   static constexpr T maxRelativeValidation = T(.30), maxCondition = T(20000);
   static constexpr int maxIterations = 60, intervalsPerPoll = 12;
 };
+// Fixed-capacity acquisition: angle[i] precedes command[i], which is the held
+// wheel-speed command for interval i; angle[i+1] is its ending observation.
+// Angles are radians, commands rad/s, and only intervals populated are valid.
 template <class T, int Capacity> struct Data {
   T angle[Capacity + 1]{}, command[Capacity]{};
   int intervals = 0;

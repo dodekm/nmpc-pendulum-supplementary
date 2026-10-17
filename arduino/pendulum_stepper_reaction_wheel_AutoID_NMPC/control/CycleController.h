@@ -18,6 +18,10 @@ enum class ControlFault : uint8_t {
   InvalidCommand,
   InvalidConfiguration
 };
+// Owns one model-fixed control cycle. The application owns physical command
+// acknowledgement and rest qualification; this class owns the estimator,
+// warm plan, capture/unloading policy and per-sample optimization state.
+// Member declaration order preserves configuration-dependent initialization.
 template <class Scalar> class CycleController {
   using Tuning = ControlTuning<Scalar>;
 
@@ -130,7 +134,8 @@ public:
     }
     ++sampleCount;
     MPCProblem<Scalar> problem;
-    const Scalar planningDelay = timing && timing->commandOccurred ? timing->commandDelay : Scalar(0);
+    const Scalar planningDelay =
+        timing && timing->commandOccurred ? timing->commandDelay : Scalar(0);
     if (!prepareProblem(estimator.state.template head<3>(), estimator.state(3), elapsedIntervals,
                         problem, planningDelay)) {
       return false;
@@ -198,9 +203,9 @@ public:
     // publication delay. Capture gates remain tied to the measured posterior;
     // only the optimization initial state advances to expected actuation time.
     // This never advances/commits the EKF or changes nominal MPC step lengths.
-    if (planningDelay > Scalar(0) &&
-        !integrateFreeFlowRK4(state, model, disturbanceAcceleration, planningDelay,
-                              problem.initialState)) return fail(ControlFault::Preview);
+    if (planningDelay > Scalar(0) && !integrateFreeFlowRK4(state, model, disturbanceAcceleration,
+                                                           planningDelay, problem.initialState))
+      return fail(ControlFault::Preview);
     problem.disturbanceAcceleration = disturbanceAcceleration;
     problem.wheelSpeedScale = config.wheel_cost_scale;
     problem.accelerationScale = std::min(config.u_limit_swing, config.u_limit_stabilize);
@@ -285,7 +290,8 @@ public:
     const Matrix<Scalar, 3, 3> stateWeight = swing * config.swing + holdingCostWeight * hold;
     const Scalar inputWeight = swing * config.R_swing + holdingCostWeight * config.R_stabilize;
     problem.accelerationScale =
-        config.u_limit_swing + (config.u_limit_stabilize - config.u_limit_swing) * holdingCostWeight;
+        config.u_limit_swing +
+        (config.u_limit_stabilize - config.u_limit_swing) * holdingCostWeight;
     previewWeight = Scalar(0);
     Matrix<Scalar, 3> preview = problem.initialState;
     const InputPlan<Scalar> shifted = shiftInputPlan(plan);
@@ -307,8 +313,9 @@ public:
     // through the three-sample dwell, then fade it with the existing momentum
     // weight ramp into the established holding/unloading policy.
     const Scalar wheelPenaltyBlend = captured
-        ? std::max(Tuning::holdingSpeedPenaltyFraction, Scalar(1) - holdingCostWeight * momentumWeight)
-        : Scalar(1);
+                                         ? std::max(Tuning::holdingSpeedPenaltyFraction,
+                                                    Scalar(1) - holdingCostWeight * momentumWeight)
+                                         : Scalar(1);
     for (int stageIndex = 0; stageIndex < kHorizon; ++stageIndex) {
       problem.referenceState[stageIndex] << Scalar(0), referenceAngle, wheelReference;
       problem.stateWeight[stageIndex] = stateWeight;

@@ -1,6 +1,6 @@
 #ifndef ADAPTIVE_IDENTIFICATIONSTREAM_H
 #define ADAPTIVE_IDENTIFICATIONSTREAM_H
-#include "StandaloneTelemetry.h"
+#include "telemetry/StandaloneTelemetry.h"
 #include <cstring>
 #include <limits>
 namespace identification_stream {

@@ -4,6 +4,10 @@
 #include "Config.h"
 namespace identification {
 // Givens QR of weighted residual rows; never form J'J for the fit direction.
+// r and z are the compressed upper-triangular system R*step=z. They remain
+// explicit fixed arrays because the fitter also uses this factor for damping,
+// information checks and uncertainty. add() copies its input row; solve()
+// writes a solution only as its backward substitution progresses.
 template <class T, int N> struct StreamingQR {
   T r[N][N]{}, z[N]{};
   void clear() {

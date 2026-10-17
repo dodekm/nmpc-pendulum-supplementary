@@ -1,0 +1,111 @@
+SOFTWARE ARCHITECTURE AND MAINTENANCE CONTRACTS
+17 October 2026
+
+START HERE
+  pendulum_stepper_reaction_wheel_AutoID_NMPC.ino contains Arduino setup/loop.
+  AdaptiveApplication.h is the public initialize(), poll(), status() facade.
+  application/Lifecycle.h defines explicit protocol phase IDs and status values.
+  application/Application.h declares the private composition root and ownership.
+  AdaptiveApplication.cpp implements that class and owns its single instance.
+  The surrounding project's README describes hardware selection and operation.
+  Offline verification in the full research workspace is described below.
+
+PACKAGES
+  application/     Lifecycle contracts, private orchestration, build identity.
+  platform/        Rig selection, sensor/actuator boundary, interrupt exclusion,
+                   timestamps, single-sample mailbox, watchdog and pulse timing.
+  telemetry/       Read-only diagnostic views, bounded serialization/queues and
+                   CRC-protected acquisition streaming. No control authority.
+  control/         Effective model, sampled flow, RK4 sensitivities, EKF, objective,
+                   nonlinear solver, terminal design and cycle supervision.
+  identification/  Excitation, weak initialization, sensitivities, robust batch
+                   fitting, information checks and independent validation.
+  numerics/        Shared numerical primitives with explicit arithmetic ordering.
+  Eigen/           Unmodified third-party numerical dependency.
+  src/AS5600/      Unmodified third-party angle-sensor dependency.
+  src/AccelStepper/ Unmodified third-party stepper dependency.
+
+  Header names are package-qualified across package boundaries. Root .cpp files
+  are intentional Arduino compilation anchors: Arduino compiles root sources
+  and src/ recursively, but not arbitrary nested application/platform folders.
+  Do not move a .cpp into those header folders without changing the build.
+
+CONTROL AND OWNERSHIP
+  Application owns the workflow; it is not another controller implementation.
+  It schedules cooperative fit/validation/design work, handles fresh samples,
+  establishes physical readiness and publishes acknowledged speed commands.
+  publishSpeedCommand() is the single atomic emergency-checked command boundary.
+  Application methods stay in one translation unit with explicit inline
+  definitions so the compiler retains visibility across orchestration calls.
+
+  Fitter and Validator borrow immutable acquisition data until their cooperative
+  poll sequence completes. Training, guided training and validation reuse ONE
+  acquisition buffer sequentially. Telemetry does not duplicate that trajectory.
+  Diagnostics contexts are temporary, non-owning, read-only views.
+  One optional CycleController is constructed only after model qualification.
+  Controller configuration and model are immutable after construction; result
+  structures describe numerical state, rather than owning hardware resources.
+
+  Preserve member declaration order: construction order and dependent initializers
+  are significant. Do not group state into nested objects as a cosmetic edit.
+  State, plan, covariance and workspaces use fixed storage. Do not add heap use,
+  virtual hardware interfaces, generic plugin registries or hidden task threads.
+
+INHERITANCE AND INTERFACES
+  Composition is used for application services. Scalar and serial-port templates
+  provide compile-time specialization and host mocks without virtual dispatch.
+  PendulumClass is a final owner of the sensor, timers, mailbox and pulse engine.
+  Private static timer callbacks service its one instance through PendulumShield.
+  DatasheetTimedStepper deliberately overrides AccelStepper::step1() to preserve
+  driver-specific STEP/DIR timing. This is the required polymorphic boundary;
+  neither the third-party implementation nor its electrical timing is replaced.
+
+MATHEMATICAL CONTRACTS
+  Physical state: [pendulum angular velocity, downward-referenced angle,
+                   prescribed wheel angular velocity].
+  Augmented EKF state adds disturbance angular acceleration as its fourth entry.
+  Identification shared parameters: [alpha, beta, gamma, bias, dry friction].
+  Each training window also has one initial-velocity nuisance coordinate.
+  Wheel quantities are commands, not independent shaft-speed measurements.
+  Distinguish free flow from a speed-change jump followed by that free flow.
+  Keep RK4 stage states and their sensitivities paired. Preserve expression
+  association, loop/reduction order, Eigen evaluation boundaries and finite checks.
+  A usable verified NMPC plan is not synonymous with gradient convergence.
+
+TIME, INTERRUPTS AND FAILURE HANDLING
+  Preserve sample-read, command-acknowledgement and publication chronology.
+  Do not move calculations, callbacks or Serial writes into critical sections.
+  Keep ISR emergency state volatile and keep atomic publication checks together.
+  Watchdog, rollover/manual-return and numerical fallbacks are active safeguards,
+  not deprecated alternative control algorithms. Do not remove them as cleanup.
+  Protocol phase/exit IDs, schema field order, event strings and candidate IDs are
+  external data contracts; a private C++ method rename must not rename wire text.
+
+CHANGE CLASSIFICATION
+  Hardware/tuning: platform/HardwareConfig.h, identification/Config.h,
+  control/ControllerConfig.h, control/ControlTuning.h, control/ModelTuning.h.
+  Treat their values, solver tolerances, horizons and covariances as scientific
+  configuration changes. A readability-only refactor must not alter them.
+  Keep imported dependencies and notices separate from project-owned source.
+  Apply the local .clang-format only to project-owned source, never vendor code.
+
+OFFLINE VALIDATION (FROM THE PROJECT ROOT; NO HARDWARE)
+  These commands belong to the full research workspace. The public source-only
+  supplement intentionally excludes test/evidence files; its README covers builds.
+  pwsh -NoProfile -File tests/run_current_validation.ps1
+  The cohort checks numerics, objective/derivative contracts, frozen-record replay,
+  both driver profiles, paused diagnostics, sanitizer, acquisition/GUI mocks,
+  independent equations and both NUCLEO-F446ZE float/-O3 builds. No upload or port.
+  Tests mock platform/StandalonePlatform.h through include-path precedence;
+  never accidentally include the real board platform in a host application test.
+  tests/firmware/test_refactor_equivalence.cpp creates a deterministic scalar-byte
+  archive when compiled against a firmware include root. Compare BEFORE/AFTER
+  builds made with the same compiler/flags to detect changed numerical outputs.
+  tests/run_refactor_equivalence.ps1 automates that comparison with an external
+  -BaselineFirmware snapshot and new external -BuildRoot. The host-only fixture
+  NumericalFixtures.h shares deterministic inputs without duplicating production.
+  Telemetry needs a standard library implementing floating-point std::to_chars;
+  the checked application host tests use MSVC, and target builds use Arm GCC14.
+  Record the source fingerprint and preserve external verification outputs.
+  Host equality and target compilation do not constitute physical validation,
+  a timing/WCET proof or a guarantee for an arbitrary mechanical apparatus.

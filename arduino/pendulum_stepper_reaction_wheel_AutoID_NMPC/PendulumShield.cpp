@@ -1,6 +1,6 @@
-#include "PendulumShield.h"
+#include "platform/PendulumShield.h"
 
-#include "CycleCounterClock.h"
+#include "platform/CycleCounterClock.h"
 
 namespace {
 CycleCounterClock pulseClock;
@@ -121,9 +121,6 @@ bool getMicrostepPinConfiguration(PendulumClass::DriverType driver_type, uint16_
 }
 
 } // namespace
-
-static void sampler_callback();
-static void stepper_callback();
 
 void DatasheetTimedStepper::setConstantSpeed(float steps_per_second) {
   // Match actuatorWrite's existing stopped-speed convention. Base setSpeed
@@ -265,13 +262,13 @@ bool PendulumClass::begin(float sample_period_s, DriverType driver_type, uint16_
 
   TimerStepper.pause();
   TimerStepper.setOverflow(STEPPER_TS, MICROSEC_FORMAT);
-  TimerStepper.attachInterrupt(stepper_callback);
+  TimerStepper.attachInterrupt(stepperCallback);
   TimerStepper.refresh();
   TimerStepper.resume();
 
   TimerSample.pause();
   TimerSample.setOverflow(static_cast<uint32_t>(samplePeriodUs), MICROSEC_FORMAT);
-  TimerSample.attachInterrupt(sampler_callback);
+  TimerSample.attachInterrupt(samplerCallback);
   TimerSample.refresh();
   TimerSample.resume();
 
@@ -408,24 +405,17 @@ uint32_t PendulumClass::controlTimeUs() const {
   return monotonicMicroseconds();
 }
 
-class PendulumClass_ : public PendulumClass {
+namespace {
+PendulumClass pendulumShield;
+} // namespace
 
-public:
-  void timer_tick() { sampleTick(); }
+PendulumClass &PendulumShield = pendulumShield;
 
-  void stepperRun() {
-    enforceCommandWatchdog();
-    stepper.runConstantSpeed();
-  }
-};
-
-PendulumClass_ PendulumShield_;
-PendulumClass &PendulumShield = PendulumShield_;
-
-static void sampler_callback() {
-  PendulumShield_.timer_tick();
+void PendulumClass::samplerCallback() {
+  PendulumShield.sampleTick();
 }
 
-static void stepper_callback() {
-  PendulumShield_.stepperRun();
+void PendulumClass::stepperCallback() {
+  PendulumShield.enforceCommandWatchdog();
+  PendulumShield.stepper.runConstantSpeed();
 }

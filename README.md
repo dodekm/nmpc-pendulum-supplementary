@@ -16,7 +16,11 @@ qualification reports, archives or precompiled firmware.
 
 ```text
 arduino/pendulum_stepper_reaction_wheel_AutoID_NMPC/
-  *.ino, *.cpp, *.h     Application lifecycle, hardware and diagnostics
+  *.ino, *.cpp         Arduino compilation anchors and composition root
+  AdaptiveApplication.h Public initialize/poll/status facade
+  application/         Lifecycle contract, private orchestration and build identity
+  platform/            Hardware policy, sensor/actuator boundary, timing and ISR tools
+  telemetry/           Bounded diagnostics, serialization and acquisition streaming
   control/             Model, RK4, EKF, NMPC, terminal design and cycle policy
   identification/      Excitation, sensitivities, batch fitting and validation
   numerics/            Shared numerical utilities
@@ -31,6 +35,12 @@ matlab/
 
 The directory structure is significant. Keep the Arduino sketch name and its
 folder name identical, and preserve the MATLAB folder nesting.
+
+The sketch's `ARCHITECTURE.txt` describes ownership, interfaces and maintenance
+contracts. Application services use fixed composition and compile-time templates;
+no additional virtual hardware layer or heap-owned service was introduced.
+Root `.cpp` files are intentional: Arduino discovers them and recursively builds
+`src/`, but does not compile arbitrary nested header-package directories.
 
 ## Hardware and operating precautions
 
@@ -53,7 +63,7 @@ is no independent wheel-shaft encoder or direct missed-step detection.
 
 ## Select the physical driver before compiling
 
-`HardwareConfig.h` is the hardware-policy selection point. The source default
+`platform/HardwareConfig.h` is the hardware-policy selection point. The source default
 is **profile 1 (HY-DIV268N)**. Select profile 0 explicitly for A4988.
 
 | Setting | A4988 | HY-DIV268N |
@@ -111,7 +121,7 @@ For HY-DIV268N, change `-DADAPTIVE_DRIVER_PROFILE=0` to
 `-DADAPTIVE_DRIVER_PROFILE=1`. This command compiles only; it does not upload.
 Upload deliberately with your configured STM32/ST-LINK workflow after checking
 the physical rig. In Arduino IDE, open the `.ino`, select Nucleo-144/F446ZE and
-the `-O3` optimization option, and set the driver in `HardwareConfig.h`.
+the `-O3` optimization option, and set the driver in `platform/HardwareConfig.h`.
 
 Driver and precision overrides must apply to **all translation units**, not
 only to the `.ino`. The firmware has linkage checks for inconsistent settings.
@@ -173,7 +183,7 @@ together; these are user-generated outputs and are not shipped in this repositor
 
 This is a source snapshot of the maintained implementation. No numerical plant
 coefficients need to be supplied: they are estimated after boot. Tuning and
-admission policies are explicit in `HardwareConfig.h`, `identification/Config.h`
+admission policies are explicit in `platform/HardwareConfig.h`, `identification/Config.h`
 and `control/ControllerConfig.h`; model-normalized weights are in
 `control/ModelTuning.h`.
 

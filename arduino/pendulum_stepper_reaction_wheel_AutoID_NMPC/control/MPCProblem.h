@@ -6,6 +6,9 @@
 #include <array>
 
 namespace pendulum {
+// Value object assembled before a solve and read without mutation by objective
+// evaluations. Each active stage penalizes its predicted end-of-interval state
+// and that interval's decision input; storage remains bounded by kHorizon.
 template <class Scalar> struct MPCProblem {
   int activeHorizon = kHorizon;
   ModelParameters<Scalar> model;
