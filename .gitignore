@@ -1,4 +1,4 @@
-# Source-only supplementary repository: keep unrelated project material out.
+# Supplementary implementation and explicitly selected manuscript data only.
 /*
 !/.gitignore
 !/.gitattributes
@@ -7,6 +7,7 @@
 !/THIRD_PARTY_NOTICES.md
 !/arduino/
 !/matlab/
+!/data/
 /arduino/*
 !/arduino/pendulum_stepper_reaction_wheel_AutoID_NMPC/
 /matlab/*
@@ -14,6 +15,7 @@
 !/matlab/gui/
 !/matlab/acquisition/
 !/matlab/misc/
+!/matlab/analysis/
 
 # Acquired data, research documents, tests and generated build products.
 **/results/
@@ -52,3 +54,8 @@
 *.m~
 .DS_Store
 Thumbs.db
+
+# These exact, curated experimental records are intentional research inputs.
+!/data/manuscript_two_rigs/
+!/data/manuscript_two_rigs/**/
+!/data/manuscript_two_rigs/**/*.csv

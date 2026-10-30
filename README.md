@@ -8,9 +8,11 @@ All feedback calculations run on the STM32. MATLAB observes the experiment,
 records the serial stream and provides explicit operator commands; it is not
 the real-time controller and is not needed for autonomous operation.
 
-This repository deliberately contains **implementation source only**. It does
-not include the manuscript, experimental recordings, results, figures, tests,
-qualification reports, archives or precompiled firmware.
+This repository contains the maintained implementation and the two curated
+experimental recordings underlying the manuscript. It does not include the
+manuscript, publication figures, tests, qualification reports, archives or
+precompiled firmware. See [the research-data description](data/manuscript_two_rigs/README.md)
+for the exact records, their limitations and the offline reproduction workflow.
 
 ## Contents
 
@@ -31,6 +33,10 @@ matlab/
   gui/                 Experiment application and bounded live-data model
   acquisition/         Native serial acquisition and session handling
   misc/                Hashing and safe record-publication helpers
+  analysis/            Offline metrics and frozen-model validation replay
+data/manuscript_two_rigs/
+  A4988_20261010/       Original recording and exact-token CSV extracts
+  HY_DIV268N_20261011/  Original recording and exact-token CSV extracts
 ```
 
 The directory structure is significant. Keep the Arduino sketch name and its
@@ -177,7 +183,9 @@ The GUI is the single maintained user-facing experiment entrypoint and uses
 the native serial acquisition engine. New sessions are written under
 `matlab/scr/results/serial/`, which Git ignores. Keep each generated session's
 `raw.txt`, `receive.jsonl`, `actions.jsonl`, `session.json` and `session.mat`
-together; these are user-generated outputs and are not shipped in this repository.
+together. Newly acquired sessions remain ignored. Only the two explicitly
+curated, byte-preserved manuscript recordings under `data/manuscript_two_rigs/`
+are shipped in this repository.
 
 ## Configuration and reproduction scope
 
